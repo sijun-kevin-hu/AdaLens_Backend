@@ -2,18 +2,34 @@ import base64
 import io
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from google import genai
 from PIL import Image
 import requests
 
-
-gemini = genai.Client()
-
 app = Flask(__name__)
 CORS(app)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["60 per minute"]
+)
+PROMPT = (
+    "What do you see in this image? "
+    "Provide a clear, concise, detailed, and helpful caption for someone with visual impairments. "
+    "Focus on key objects, actions, and the overall scene. "
+    "Limit the given description to less than 40 words."
+)
 
 @app.route('/analyze-image', methods=['POST'])
+@limiter.limit("30 per minute") # Limit for this route
 def analyze_image():
+    # Get API Key from req header
+    api_key = request.headers.get('x-api-key')
+    if not api_key:
+        return jsonify({'error': 'API key is missing'}), 401
+    
     # Get image URL from request
     data = request.get_json()
     if not data or 'imageUrl' not in data:
@@ -23,14 +39,15 @@ def analyze_image():
     print(f"Backend: Received req to analyze image: {image_url}")
     
     try:
+        gemini = genai.Client(api_key=api_key)
         image_data = get_image_source(image_url)
-        image = Image.open(io.BytesIO(image_data['bytes'])).convert('RGB')
-        prompt = "What do you see in this image? Provide a clear, concise, detailed, and helpful caption for someone with visual impairments. Focus on key objects, actions, and the overall scene."
-        contents = [prompt, image]
         
+        image = Image.open(io.BytesIO(image_data['bytes'])).convert('RGB')
+        contents = [PROMPT, image]
+    
         response = gemini.models.generate_content(
             model="gemini-2.5-flash",
-            contents=contents
+            contents=contents,
         )
         
         description = response.text
