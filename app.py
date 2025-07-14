@@ -80,3 +80,8 @@ def get_image_source(source_url):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+    
+@app.route('/', methods=['GET'])
+def health_check():
+    # A simple endpoint for pings
+    return jsonify({"status": "healthy"}), 200
