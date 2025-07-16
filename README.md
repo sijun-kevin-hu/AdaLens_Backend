@@ -45,7 +45,7 @@ To run this server locally for development or contributions:
 1. **Clone the repository:**
 
     ```bash
-    git clone [https://github.com/sijun-kevin-hu/AdaLens_Backend.git](https://github.com/your-username/adalens-backend.git)
+    git clone https://github.com/sijun-kevin-hu/AdaLens_Backend.git
     cd AdaLens_Backend
     ```
 
